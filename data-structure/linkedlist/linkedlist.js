@@ -13,9 +13,14 @@
  * 9.  getNth--获取链表中的第n个节点
  * 10. printNthFromLast--从链表列表末尾开始第n个节点
  * 11. printMiddle--打印链表中间部分
+ * 12. count--计算给定数据出现的次数
+ * 13. detectLoop--检测列表是否有循环
  * 
  * 
  */
+
+
+
 class node{
   constructor(data){
     this.data = data;
@@ -143,6 +148,42 @@ class Linklist{
     }
     return slow.data;
   }
+  /*count(data){
+    let count = 0;
+    let current = this.head;
+    while(current !== null){
+      if(current.data === data){
+        count++
+      }
+      current = current.next;
+    }
+    return count;
+  }*/
+  count(head, data, count = 0){
+    if(head === null){
+      return count;
+    }
+    if(head.data === data){
+      count++;
+    }
+    count = this.count(head.next, data, count);
+    return count;
+  }
+  detectLoop(){
+    let current = this.head;
+    let hasVisited = [];
+    let loopCircle = null;
+    while(current !== null){
+      if(current.hasCircle){
+        console.log(current);
+        return true;
+      }else{
+        current.hasCircle = true;
+        current = current.next;
+      }
+    }
+    return false;
+  }
   print(){
     let current = this.head;
     while(current !== null){
@@ -153,10 +194,10 @@ class Linklist{
 }
 
 const linkList = new Linklist();
-linkList.push(1);
-linkList.push(2);
-linkList.push(3);
+linkList.push(20);
 linkList.push(4);
-linkList.push(5);
-console.log(linkList.printMiddle());
+linkList.push(15);
+linkList.push(10);
+linkList.head.next.next.next = linkList.head.next;
+console.log(linkList.detectLoop());
 //linkList.print();
