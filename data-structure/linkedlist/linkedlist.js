@@ -15,7 +15,13 @@
  * 11. printMiddle--打印链表中间部分
  * 12. count--计算给定数据出现的次数
  * 13. detectLoop--检测列表是否有循环
- * 
+ * 14. detectAndCountLoop--查询循环长度
+ * 15. isPalindrome--判断是否是回文链表
+ * 16. removeDuplicates--从排序的链表中删除重复项
+ * 17. removeDuplicates--未排序的链表删除重复项
+ * 18. swapNodes--交换链表中的节点而不交换数据
+ * 19. pairWiseSwap--成对交换链表元素
+ * 20. moveToFront--将最后一个元素移动给定链表的前面
  * 
  */
 
@@ -146,7 +152,7 @@ class Linklist{
         slow = slow.next;
       }
     }
-    return slow.data;
+    return slow;
   }
   /*count(data){
     let count = 0;
@@ -184,6 +190,131 @@ class Linklist{
     }
     return false;
   }
+  detectAndCountLoop(){
+    let i = 0;
+    let current = this.head;
+    while(current !== null){
+      if(!current.hasCircle){
+        current.hasCircle = ++i;
+        current = current.next; 
+      }else{
+        return i ;
+      }
+    }
+  }
+  isPalindrome(){
+    let fast = this.head;
+    let slow = this.head;
+    let prevArray = [];
+    let nextArray = [];
+    let size = this.getCount(this.head);
+    let flag = true;
+    while(fast !== null && fast.next !== null){
+      prevArray.push(slow.data);
+      fast = fast.next.next;
+      slow = slow.next;
+    }   
+    if(size % 2 !== 0){
+      slow = slow.next
+    };
+    while(slow!==null){
+      nextArray.push(slow.data);
+      slow = slow.next;
+    }
+    nextArray.reverse()
+    for(let i = 0; i < prevArray.length; i++){
+      if(prevArray[i] !== nextArray[i]){
+        return false;
+      }
+    }
+    return true;
+  }
+  /*removeDuplicates(){
+    let current = this.head;
+    while(current !== null && current.next !== null){
+      if(current.data === current.next.data){
+        let temp = current.next.next;
+        current.next = temp;
+      }else{
+        current = current.next;
+      }
+    }
+  }*/
+  removeDuplicates(){
+    let current = this.head;
+    let prev = null;
+    let visitData = [];
+    while(current !== null){
+      let data = current.data;
+      if(!visitData.includes(data)){
+        visitData.push(data);
+        prev = current;
+      }else{
+        prev.next = current.next;
+      }
+      current = prev.next;
+    }
+  }
+  swapNodes(x, y){
+    let current = this.head;
+    let a = null, b = null;
+    let prev = null;
+    let prevA = null, prevB = null;
+    while(current !== null){
+      if(x === current.data){
+        prevA = prev;
+        a = current;
+      }
+      if(y === current.data){
+        prevB = prev;
+        b = current;
+      }
+      prev = current;
+      current = current.next;
+    }
+    if(a && b){
+      let tempA = a.next;
+      let tempB = b.next;
+      if(a.next.data === b.data){
+        prevA.next = b;
+        tempA = tempB;
+        b.next = a;
+        a.next = tempB;
+      }else{
+        a.next = null;
+        b.next = null;
+        prevA.next = b;
+        b.next = tempA;
+        prevB.next = a;
+        a.next = tempB;
+      }
+    }
+  }
+  /*pairWiseSwap(){
+    let current = this.head;
+    while(current !== null && current.next !== null){
+      [current.data, current.next.data] = [current.next.data, current.data];
+      current = current.next.next;
+    }
+  }*/
+  pairWiseSwap(current){
+    if(current === null){ return }
+    [ current.data, current.next.data ] = [ current.next.data, current.data ];
+    return  this.pairWiseSwap(current.next.next)
+  }
+  moveInFront(){
+    let current = this.head;
+    let prevlast = null, last = null;
+    while(current !== null && current.next !== null){
+      prevlast = current;
+      current = current.next;
+    }
+    last = current;
+    prevlast.next = null;
+    last.next = this.head;
+    this.head = last;
+
+  }
   print(){
     let current = this.head;
     while(current !== null){
@@ -194,10 +325,13 @@ class Linklist{
 }
 
 const linkList = new Linklist();
-linkList.push(20);
+linkList.push(6);
+linkList.push(5);
 linkList.push(4);
-linkList.push(15);
-linkList.push(10);
-linkList.head.next.next.next = linkList.head.next;
-console.log(linkList.detectLoop());
+linkList.push(3);
+linkList.push(2);
+linkList.push(1);
+//linkList.head.next.next.next.next = linkList.head.next;
+linkList.moveInFront();
+linkList.print();
 //linkList.print();
