@@ -22,6 +22,11 @@
  * 18. swapNodes--交换链表中的节点而不交换数据
  * 19. pairWiseSwap--成对交换链表元素
  * 20. moveToFront--将最后一个元素移动给定链表的前面
+ * 21. sortedIntersect--升序链表中两个链表的交集
+ * 22. getIntesectionNode--获取两个链表的交点
+ * 23. segregateEvenOdd--分离链表中的偶数和奇数节点
+ * 24. reverse--反转链表
+ * 
  * 
  */
 
@@ -313,7 +318,62 @@ class Linklist{
     prevlast.next = null;
     last.next = this.head;
     this.head = last;
-
+  }
+  sortedIntersect(list, nextList){
+    let current = list.head;
+    let nextCurrent = nextList.head;
+    let newCurrent = new Linklist();
+    while(current !== null && nextCurrent !== null){
+      if(current.data === nextCurrent.data){
+        newCurrent.push(current.data);
+        current = current.next;
+        nextCurrent = nextCurrent.next;
+      }else if(current.data < nextCurrent.data){
+        current = current.next;
+      }else{
+        nextCurrent = nextCurrent.next;
+      }
+    }
+    return newCurrent;
+  }
+  getIntesectionNode(list, nextList){
+    let current = list.head;
+    let nextCurrent = nextList.head;
+    while(current !== null){
+      if(!current.hasSet){
+        current.hasSet = true;
+      }
+      current = current.next;
+    } 
+    while(nextCurrent !== null){
+      if(nextCurrent.hasSet){
+        return nextCurrent;
+      }
+      nextCurrent = nextCurrent.next;
+    }
+  }
+  /*reverse(){
+    let prev = null;
+    let current = this.head;
+    let next = null;
+    while(current !== null){
+      next = current.next;
+      current.next = prev;
+      prev = current;
+      current = next;
+    }
+    this.head = prev;
+  }*/
+  reverse(current, prev){
+    if(current.next === null){
+      this.head = current;
+      current.next = prev;
+      return current;
+    }
+    let next = current.next;
+    current.next = prev;
+    this.reverse(next, current);
+   // return this.head;
   }
   print(){
     let current = this.head;
@@ -325,13 +385,17 @@ class Linklist{
 }
 
 const linkList = new Linklist();
+linkList.push(11);
+linkList.push(10);
+linkList.push(9)
 linkList.push(6);
-linkList.push(5);
 linkList.push(4);
-linkList.push(3);
-linkList.push(2);
 linkList.push(1);
-//linkList.head.next.next.next.next = linkList.head.next;
-linkList.moveInFront();
+linkList.push(0);
 linkList.print();
+linkList.reverse(linkList.head, null)
+linkList.print();
+
+//linkList3.print();
+//linkList.head.next.next.next.next = linkList.head.next;
 //linkList.print();
