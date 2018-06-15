@@ -26,11 +26,11 @@ recursive(0);
 
 **执行上下文堆栈**: 执行上下文栈是一种 LIFO(后进先出)结构,用于维护控制流程和执行顺序
 
-![]('http://www.xiaojichao.com/static/upload/20171215/pVd7fNaNvTzy_r_jWCk3.png')
+![](http://www.xiaojichao.com/static/upload/20171215/pVd7fNaNvTzy_r_jWCk3.png)
 
 我们还可以了解到,全局上下文总是在栈的底部,他是由之前任何其他上下文的执行创建的
 
-通常一个上下文的代码会一直运行到结束,不过正如我们上面提到过的,有些对象,比如`generator`,可能会违反栈的 LIFO 顺序,一个`generator`函数可能会挂起其正在执行的上下文的,并在其结束前将其从栈中删除。一旦`generator`再次激活,他上下文就被回复,并再次压入栈中
+通常一个上下文的代码会一直运行到结束,不过正如我们上面提到过的,有些对象,比如`generator`,可能会违反栈的 LIFO 顺序,一个`generator`函数可能会挂起其正在执行的上下文的,并在其结束前将其从栈中删除。一旦`generator`再次激活,他上下文就被恢复,并再次压入栈中
 
 ```
 function *gen(){
@@ -74,7 +74,7 @@ foo(30);
 
 全局上下文以及`foo`函数的上下文的环境结构看起来会像下面这样
 
-![]('http://www.xiaojichao.com/static/upload/20171215/_4_iCT4i2nWck7DXOB3_.png')
+![](http://www.xiaojichao.com/static/upload/20171215/_4_iCT4i2nWck7DXOB3_.png)
 
 变量查找的时候会产生变量屏蔽的规则: 如果一个变量在自己的环境中找不到,就试着在父环境,父环境中的父环境中查找他,以此类推,直到查完整个环境链。这就解释了我们为什么还可以去访问变量 y,因为他是在父环境中找到的。
 
@@ -108,7 +108,7 @@ console.log(
 )
 ```
 
-![]('http://www.xiaojichao.com/static/upload/20171215/tJEx2IUIGj7bocEq3rL3.png')
+![](http://www.xiaojichao.com/static/upload/20171215/tJEx2IUIGj7bocEq3rL3.png)
 
 注意,绑定对象的存在是为了涵盖以前的构造(比如`var`声明和`with`语句),这种构造也将其对象作为绑定对象提供。
 
@@ -337,4 +337,247 @@ let constantize = (obj) => {
 
 ### 闭包
 
+**定义: 当前函数可以记住并访问所在的词法作用域时, 就产生了闭包,即使函数实在当前词法作用域之外执行**
+
+我们用一个例子来展示闭包的工作原理
+
+```
+function makeCounter(){
+  let count = 0;
+  return function(){
+    return count++;
+  }
+}
+```
+
+1.  当脚本刚开始执行的时候,只有全局词汇环境
+
+![](https://javascript.info/article/closure/lexenv-nested-makecounter-1.png)
+
+所有声明的函数都会有一个隐含的属性`[[environment]]`也就是上文提到的词法环境它是一个包含函数作用域内标识符映射到值的存储表和对父作用域的引用的属性
+
+这里的`makeCounter`是在全球词法环境中创建的,因此`[[environment]]`其中的对父作用域的引用指向全局作用域
+
+2.  代码执行,并且调用`makeCounter()`,下面是执行在第一行的时刻的快照`makeCounter()`
+
+![](https://javascript.info/article/closure/lexenv-nested-makecounter-2.png)
+
+在调用`makeCOunter`的那一刻,词法环境被创造出来,用来保持其变量和参数和对父作用域的引用
+
+所以我们现在由两个词法环境:第一个是全局的,第二个是当前的`makeCounter`调用,外部引用是全局的。
+
+3.  在执行过程中`makeCounter`,会创建一个嵌套函数
+
+函数算是否使用函数声明或者函数表达式创建并不重要。所有函数都会通过`[[Enviroment]]`引用他们所在的词法环境的属性。所以我们新的嵌套函数也可以得到他
+
+对于我们新的嵌套函数,他的词法环境中包含对`makeCounter`词法环境的引用
+
+![](https://javascript.info/article/closure/lexenv-nested-makecounter-3.png)
+
+4.  随着执行的继续,调用`makeCounter()`完成,结果嵌套函数被分配给全局变量
+
+![](https://javascript.info/article/closure/lexenv-nested-makecounter-4.png)
+
+该函数只有一行: `return counst++`,当我们运行时它会被执行
+
+5.  当`counter()`被调用时,会为他创建一个空的词法环境,它本身没有局部变量,但是其中函数有的`[[Environment]]`属性存在对`makeCounter`词法环境的引用,所以他可以访问创建他的前一个调用的变量
+
+![](https://javascript.info/article/closure/lexenv-nested-makecounter-5.png)
+
+现在,如果它访问一个变量,他首先搜索他自己的词法环境(空白),然后搜索前一个`makeCounter`调用的词法环境,然后搜索全局变量
+
+当它寻找`count`,他会在`makeCounter`的词法环境中找到变量
+
+**注意: 虽然`makeCounter()`前一段时间调用完成,但其词法环境仍保留在内存中,因为嵌套函数中的`[[Environment]]`引用它的词法环境**
+
+通常,只要有可能使用他的函数,词法环境对象就会激活,只有当没有引用他的函数的时候,他才会被清除
+
+6.  调用`counter()`不仅返回值`count`,而且还增加他的值,请注意,该值`count`会在发现他的环境中完全修改
+
+![](https://javascript.info/article/closure/lexenv-nested-makecounter-6.png)
+
 ### this
+
+`this`值是一个动态并隐式传给上下文的代码的特殊对象。我们可以把它当作是一个隐式的额外形参,能够访问,但是不能修改
+
+`this`值的用途是为多个对象执行相同的代码
+
+**定义：`this`是一个隐式的上下文对象,可以从一个执行上下文的代码中访问,从而可以为多个对象应用相同的代码**
+
+而因为`this`是动态的,所以他实在函数调用的时候被绑定的。所以这完全取决于函数的调用位置
+
+通常`this`的绑定规则有四种,在 ES6 后又出现了第 5 种规则
+
+- 默认绑定:
+
+首先要介绍的是最常用的函数调用类型,独立函数调用,可以把这条规则看作是无法应用其他规则的默认规则,如下代码
+
+```
+var a = 2;
+function foo(){
+  console.log(this.a);
+}
+foo() // 2;
+```
+
+我们看到当调用`foo()`时,`this.a`被解析成了全局变量`a`。这是因为函数调用时应用了`this`的默认绑定,因此`this`指向全局对象。
+可以通过分析调用位置来看看`foo()`时如何调用的。在代码中,`foo()`是直接使用不带任何修饰的函数引用进行调用的,因此只能使用默认绑定,无法应用其他规则。
+
+而 ES6 后,因为出现新的变量声明关键字`let`和`const`,用他们声明的变量将不会挂载到全局对象上,例如
+
+```
+lat a = 2;
+function foo(){
+  console.log(this.a);
+}
+foo(); // undefined
+```
+
+- 隐式绑定:
+
+另一条需要考虑的规则是调用位置是否有上下文对象,或者说是否被某个对象拥有或者包含。例如
+
+```
+function foo(){
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+}
+obj.foo(); // 2
+```
+
+调用位置会使用 obj 上下文来引用函数,当函数引用有上下文对象时,隐式绑定规则会把函数调用中的`this`绑定到上下文对象。因为调用`foo()`时`this`绑定到`obj`,因此`this.a`和`obj.a`是一样的。。
+
+对象属性引用链中只有上一层或者说最后一层在调用位置中起作用。
+
+```
+function foo(){
+  console.log(this.a)
+}
+
+var obj2 = {
+  a: 42,
+  foo: foo
+}
+
+var obj1 = {
+  a: 2,
+  obj2: obj2
+}
+
+obj1.obj2.foo(); // 42
+```
+
+**隐式丢失:**
+
+一个最常见的`this`绑定问题就是被隐式绑定的函数会丢失绑定对象,也就是说他会应用默认绑定,从而把`this`绑定到全局对象或者`undefiend`上,取决于是否是严格模式
+
+```
+function foo(){
+  console.log(this.a);
+}
+var obj = {
+  a: 2,
+  foo: foo
+};
+
+var bar = obj.foo; // 函数别名
+var a = 'window';
+bar(); // window
+```
+
+虽然`bar`是`obj.foo`的一个引用,但是实际上,它引用的是`foo`函数本身,因此此时的`bar()`其实是一个不带任何修饰的函数调用,因此应用了默认绑定。而这种现象也会出现在传参中
+
+```
+function foo(){
+  console.log(this.a);
+}
+
+function doFoo(fn){
+  // fn = obj.foo 隐式赋值
+  fn();
+}
+
+var obj = {
+  a: 2,
+  foo: foo
+}
+
+var a = 'window';
+doFoo(obj.foo); // 'window'
+```
+
+- 显式绑定:
+
+隐式绑定的规则是,我们必须在一个对象内部包含一个指向函数的属性,并通过这个属性简介引用函数,从而把`this`间接(隐式)绑定到这个对象。但是我们也可以用`call`和`apply`方法来将`this`强制绑定到对象上,我们称之为显示绑定
+
+```
+function foo(){
+  console.log(this.a);
+}
+
+var obj = {
+  a: 2
+}
+
+foo.call(obj); // 2
+```
+
+通过`foo.call(...)`,我们可以在调用`foo`时强制把他的`this`绑定到`obj`上。而且用这种方法也可以解决隐式绑定的问题
+
+```
+function bind(fn, obj){
+  return function(){
+    return fn.call(obj);
+  }
+}
+function foo(){
+  console.log(this.a);
+}
+var obj = {
+  a: 2
+}
+bar = bind(foo, obj);
+bar(); //2
+```
+我们称这种方式为硬绑定,由于硬绑定是一种常用的方法,所以`ES5`中提供了内置方法`bind()`,他会返回一个硬编码的新函数,他会把你指定的参数设置为`this`上下文并调用原始函数。
+
++ new绑定:
+
+我们使用`new`来调用函数,或者发生构造函数调用的时候,会自动执行下面的操作
+1. 创建一个全新的对象
+2. 这个对象的`[[protottype]]`连接到构造函数的原型对象上
+3. 这个新对象会绑定到函数调用的`this`
+4. 如果函数没有返回其他对象,那么`new`表达式中的函数调用会自动返回这个新对象。
+```
+function foo(a){
+  this.a = a;
+}
+var bar = new foo(2);
+console.log(bar.a); // 2
+```
+
++ 箭头函数绑定:
+
+箭头函数不使用`this`的四种标准规则,而是根据外层(函数或全局)作用域来决定`this`。
+```
+function foo(){
+  return (a) => {
+    console.log(this.a);
+  }
+}
+
+var obj1 = {
+  a: 2
+}
+var obj2 = {
+  a: 3
+}
+
+var bar = foo.call(obj1);
+bar.call(obj2); // 2
+```
+`foo()`内部创建的箭头函数会捕获调用时`foo()`的`this`。由于`foo()`的`this`绑定到`obj1`,`bar`的`this`也会绑定到`obj1`。箭头函数的绑定无法被修改(new也不行)
