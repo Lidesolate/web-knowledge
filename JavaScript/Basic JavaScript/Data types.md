@@ -112,7 +112,6 @@ console.log(rabbit instanceOf Rabbit); // false
 
 ```
 let s = Object.prototype.toString;
-
 s.call(123);   // [object, Number]
 s.call(null);  // [object null]
 s.call(alert); // [object Function]
