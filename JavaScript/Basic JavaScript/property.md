@@ -240,3 +240,256 @@ rabbit.sayName(); // foo;
 ```
 
 ### 继承
+
+关于面向对象的语言都支持两种继承方式: 接口继承和实现继承。接口继承只继承方法签名,而实现继承则继承实际的方法。而在 JavaScript 中支持实现继承,而且其实现继承主要是依靠原型链原理。
+
+1.  基于原型链的继承
+
+```
+function Animal(name){
+  this.name = name;
+}
+Animal.prototype.eat = function(){
+  console.log(this.name + 'eats');
+}
+
+function Rabbit(name){
+  this.name = name;
+}
+
+Rabbit.prototype = new Animal();
+
+Rabbit.prototype.jump = function(){
+  console.log(this.name + 'jumps');
+}
+
+let rabbit =  new Rabbit('foo');
+rabbit.eat(); // foo eats
+rabbit.jump(); // foo jumps;
+```
+
+`rabbit`首先会搜索`Rabbit.prototype`,然后`Animal.prototype`。然后,为了完整起见,我们要提到的是,如果在`Animal.prototype`找不到方法则会将在`Object.prototype`搜索,因为`Animal.prototype`他是普通的对象。
+
+![](https://javascript.info/article/class-patterns/class-inheritance-rabbit-animal-2.png)
+
+原型链的问题:
+
+- 包含引用类型值得原型属性会被所有实例共享;而这也正是为什么要在构造函数中,而不是在原型对象中方定义属性的原因。再通过原型来实现继承时,原型实际上会称为另一个类型得实例。于是原先得实例属性也就是成为了现在得原型属性了。
+
+```
+function Animal(name){
+  this.name = name;
+  this.kinds = ['cat', 'dog'];
+}
+
+function Rabbit(name){
+  this.name = name;
+}
+
+Rabbit.prototype = new Animal();
+
+let rabbit1 = new Rabbit('bar');
+animal.kinds.push('rabbit');
+let rabbit2 = new Rabbit('foo');
+console.log(rabbit.kinds); // ['cat', 'dog', 'rabbbit'];
+```
+
+- 在创建子类型的实例时,不能向父类型的构造函数中传递参数。实际上,应该是说没有办法在不影响所有对象的实例的情况下,给父类型的构造函数传递参数。
+
+2.  借用构造函数
+
+为了解决原型中包含引用类型值所带来的问题的过程中,我们使用借用构造函数的技术。即在子类型构造函数的内部调用父类型构造函数。
+
+```
+function Animal(name){
+  this.name = name;
+  this.kinds = ['cat', 'dog'];
+}
+
+function Rabbit(name){
+  Animal.call(this);
+}
+
+Rabbit.prototype = new Animal();
+
+let rabbit1 = new Rabbit('bar');
+rabbit1.kinds.push('rabbit');
+let rabbit2 = new Rabbit('foo');
+console.log(rabbit1.kinds);
+console.log(rabbit2.kinds)
+```
+
+相对于原型链来说,借用构造函数有一个很大的优势,既可以在子类型构造函数中向父类型构造函数传递参数,如果仅仅是借用构造函数,那么而将无法避免构造函数模式存在的问题--方法都在构造函数定义,因此函数复用就无从谈起了。
+
+3.  组合继承
+
+结合原型链模式和构造函数两种继承模式的优点将其组合起来。称之为组合继承模式。用原型链实现对原型属性和方法的继承,而通过借用构造函数来实现对实例属性的继承。
+
+```
+function Animal(name){
+  this.name = name;
+}
+
+Animal.prototype.eat = function(){
+  console.log(this.name + ' eats');
+}
+
+function Rabbit(name){
+  Animal.call(this, name);
+}
+
+Rabbit.prototype = new Animal();
+
+Rabbit.prototype.jump = function(){
+  console.log(this.name + ' jump');
+}
+
+let rabbit1 = new Rabbit('bar');
+rabbit1.eat();
+rabbit1.jump();
+```
+
+4.  原型式继承
+
+另一种实现继承的方法是借助原型可以基于已有的对象创建新对象,同时还不必因此创建自定义类型。具体如下
+
+```
+function createRabbit(o){
+  function Rabbit(){};
+  Animal.prototype = o;
+  return new Rabbit();
+}
+```
+
+ES5 新增了`Object.create()`方法规范化了原型式继承。这个方法接收两个参数: 一个用作新对象原型的对象和(可选的)一个为新对象定义额外属性的对象。在传入一个参数的情况下。
+
+```
+let animal = {
+  eat: function(){
+    console.log(this.name + ' eat')
+  }
+}
+
+let rabbit = Object.create(animal);
+rabbit.name = 'foo';
+rabbit.eat();
+```
+
+在没有兴师动众的创建构造函数,而只想让一个对象于另一个对象保持类似的情况下,原型式的继承是完全可以胜任的,不过包含引用类型值得属性始终都会始终共享相应得值,就像使用原型模式一样。
+
+5.  寄生式继承
+
+寄生式继承的思路与寄生构造函数和工厂模式类似,即创建一个仅用于封装继承过程的函数,该函数在内部以某种方式来增强对象,最后在返回对象
+
+```
+function createRabbit(original){
+  let clone = object.create(original); // 通过调用函数创建一个对象
+  clone.sayName = function(){
+    console.log(this.name)
+  }
+  return clone;
+}
+```
+
+在考虑对象而不是自定义类型和构造函数的情况下,寄生式继承也是一种有用的模式
+
+6.  寄生组合式继承
+
+前面提到过的组合继承模式也有自己的不足,那就是会调用两次父类型构造函数,一次是在创建子类型原型的时候,一次是在子类型构造函数内部。而所谓的寄生组合式继承,即通过借用构造函数类继承属性,通过原型链的混成形式来继承方法。其背后的基本思路是: **不必为了指定子类型的原型而调用父类型的构造函数,我们所需要的无非就是父类型原型的一个副本而已,本质上,就是使用寄生式继承来继承夫类型的原型,然后再将结果指定给子类型的原型**
+
+```
+function inheritProperty(animal, rabbit){
+  let prototype = Object.create(animal.prototype);
+  prototype.constructor = rabbit;
+  rabbit.prototype = prototype;
+}
+function Animal(name){
+  this.name = name;
+  this.kinds = ['cat', 'dog'];
+}
+
+Animal.prototype.eat = function(){
+  console.log(this.name + 'eats');
+}
+
+function Rabbit(name, age){
+  Animal.call(this, name);
+  this.age = age;
+}
+
+inheritProperty(Animal, Rabbit)
+
+Rabbit.prototype.jump = function(){
+  console.log(this.name + 'jump');
+}
+
+let rabbit1 = new Rabbit('foo');
+rabbit1.eat();
+```
+
+这样的话只掉用了一次父类型构造函数,并且避免了在`Animal.prototype`上面创建不必要的属性。
+
+7.  ES6 继承
+
+在 ES6 中可以通过`extends`关键字实现继承,这比 ES5 的通过修改原型链实现继承,清晰和方便很多
+
+```
+class Animal{
+  constructor(name){
+    this.name = name;
+  }
+  sayName(){
+    console.log(this.name);
+  }
+}
+
+class Rabbit extends Animal {
+  constructor(name, age){
+    super(name);
+    this.age = age;
+  }
+  sayAge(){
+    super
+    console.log(this.age);
+  }
+}
+
+let rabbit1 = new Rabbit('foo', 19);
+rabbit1.sayAge();
+rabbit1.sayName();
+```
+
+上面代码中,出现的`super`关键字,他在这表示父类的构造函数,用来创建父类的`this`对象
+
+子类必须在`constructor`方法中调用`super`方法,否则新建实例时会报错。
+
+ES5 的继承,实质是先创造子类的实例对象`this`,然后再将父类的方法添加到`this`上面`Parent.call(this)`。
+
+而 ES6 的继承机制完全不同,实质是先创造父类的实例对象`this`(所以必须先调用`super`方法),然后在用子类的构造函数修改`this`。
+
+`super`用法分为两种情况,对象使用和函数使用:
+
+- 函数使用: `super`作为函数调用时,代表父类的构造函数,ES6 要求,子类的构造函数必须执行`super`函数
+- 对象使用: `super`作为对象时,在普通方法中,执行父类的原型对象;在静态方法中,指向父类。在子类普通方法中通过`super`调用父类的方法时,方法内部的`this`指向当前的子类实例,再子类的静态方法中通过`super`调用父类的方法时,方法内部的`this`指向当前的子类
+
+**ES6继承的`prototype`和`__protot__`属性**:
+
+在ES5实现中,每一个对象都有`__proto__`属性,指向对应的构造函数的`prototype`属性。`Class`作为构造函数的语法糖,同时有`prototype`属性和`__proto__`属性,因此同时存在两条继承链
+
++ 子类的`__proto__`属性,表示构造函数的继承,总是指向父类
++ 子类`prototype`属性的`__proto__`属性,表示方法的继承,总是指向父类的`prototype`属性
+```
+class A {
+
+}
+class B extends A {
+  
+}
+
+B.__proto__ === A // true;
+B.prototype.__proto__ === A.prototype; // true
+```
+
+
+
+ 
