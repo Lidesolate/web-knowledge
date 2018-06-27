@@ -101,6 +101,22 @@ class binaryTree{
       }
     }
   }
+  dfsOrder(node, callback){
+    let queue = [];
+    queue.push(node);
+    while(queue.length !== 0){
+      let temp = queue.pop();
+      if(callback){
+        callback(temp);
+      }
+      if(temp.right){
+        queue.push(temp.right);
+      }
+      if(temp.left){
+        queue.push(temp.left)
+      }
+    }
+  }
   inorder(node, callback){
     if(node === null){
       return;
@@ -138,7 +154,8 @@ binarytree.insert(2);
 binarytree.insert(3);
 binarytree.insert(4);
 binarytree.insert(5);
-binarytree.Levelorder(binarytree.root, (node) => console.log(node.data))
-binarytree.preorder(binarytree.root, (node) => console.log(node.data));
-binarytree.inorder(binarytree.root, (node) => console.log(node.data));
-binarytree.postorder(binarytree.root, (node) => console.log(node.data))
+binarytree.dfsOrder(binarytree.root, (node) => console.log(node.data))
+//binarytree.Levelorder(binarytree.root, (node) => console.log(node.data))
+//binarytree.preorder(binarytree.root, (node) => console.log(node.data));
+//binarytree.inorder(binarytree.root, (node) => console.log(node.data));
+//binarytree.postorder(binarytree.root, (node) => console.log(node.data))
