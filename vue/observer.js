@@ -1,87 +1,123 @@
-let target = null;
-
 class myVue {
   constructor(opts){
     if(opts.data){
       this.initData(opts.data);
     }
-    this.target = null;
   }
   initData(data){
-    if(typeof data === 'function'){
-      let $data = this._data = data.call(this);
-      this.initProxy(this._data);
-      this.depCollection(this._data);
-    }
+    this._data = typeof data === 'function' ? data.call(this) : data;
+    this.initProxy(this._data);
+    this.observe(this._data);
+    
   }
   initProxy(data){
+    let vm = this;
     let keys = Object.keys(data);
     for(let key of keys){
-      Object.defineProperty(this, key, {
+      Object.defineProperty(vm, key, {
         get(){
-          return this._data[key];
+          return vm._data[key];
         },
-        set(value){
-          this._data[key] = value;
+        set(val){
+          vm._data[key] = val;
         }
       })
     }
   }
-  depCollection(data){
-    for(let key in data){
-      let dep = [];
-      let self = this;
-      let val = data[key];
-      if(Object.prototype.toString.call(val) === '[object Object]'){
-        this.depCollection(val);
-      }
-      Object.defineProperty(data, key, {
-        set(newVal){
-          if(val === newVal) return;
-          val = newVal;
-          dep.forEach(fn => fn())
-        },
-        get(){
-          dep.push(self.target);
-          return val;
-        }
-      })
-    }
-  }
-  $watch(exp, fn){
-    this.target = fn;
-    let reg = /\./;
-    let obj = this._data;
-    if(typeof exp === 'function'){
-      exp();
-      return;
-    }
-    if(reg.test(exp)){
-      let parent = exp.split('.');
-      parent.forEach(key => {
-        obj = obj[key];
-      })
-      return;
-    }
-    this._data[exp]
+  observe(data){
+    if(Object.prototype.toString.call(data) !== '[object Object]') return; 
+    let ob = new Observe(data, this);
+    return ob;
   }
 }
+
+// 响应式
+class Observe{
+  constructor(data, self){
+    this.vm = self;
+    this.$data = data;
+    this.dep = new Dep();
+    this.def(data, '_ob_', this);
+    this.walk(data);
+  }
+  walk(obj){
+    const keys = Object.keys(obj);
+    for(let key of keys){
+      this.defineReactive(obj, key);
+    }
+  }
+  def(obj, key, self){
+    Object.defineProperty(obj, key, {
+      value: {
+        value: obj,
+        dep: new Dep(),
+      }
+    })
+  }
+  defineReactive(obj, key){
+    const dep = new Dep();
+    let val = obj[key];
+    let childOb = this.vm.observe(val);
+    Object.defineProperty(obj, key, {
+      enumerable: true,
+      configurable: true,
+      get: function recativeGetter(){
+        const value = val;
+        if(Dep.target){
+          dep.depend();
+          if(childOb){
+            childOb.dep.depend();
+          }
+        }
+        return value;
+      },
+      set: function recativeSetter(newVal){
+        const value = val;
+        if(newVla === value){
+          return;
+        }
+        val = newVal;
+        childOb = this.vm.observer(newVal);
+        dep.notify();
+      }
+    })
+  }
+} 
+
+// 依赖收集
+class Dep{
+  constructor(){
+    this.subs = [];
+  }
+  addSub(sub){
+    this.subs.push(sub)
+  }
+  depend(){
+    Dep.target.addDep(this);
+  }
+  notify(){
+    for(let sub of this.subs){
+      sub.update();
+    }
+  }
+}
+
+// 检测函数
+
+
+
+Dep.target = null;
 
 let app = new myVue({
   data(){
     return {
-      a: 1,
-      b: {
-        c: 2,
+      a: {
+        b: 1
       }
     }
   }
 })
 
-function render(){
-  console.log(app.a, app.b.c);
-}
 
-app.$watch(render, render);
-app.b.c = 3
-console.log(app.b.c);
+console.log(app._data._ob_);
+
