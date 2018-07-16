@@ -113,6 +113,72 @@ HTML采用基于流的布局模型,这意味这大多数情况下只要一次遍
 
 ### 阻塞问题
 
+#### JavaScript阻塞问题
+
+当浏览器构建DOM时,如果遇到`<script></script>`HTML中的标记,他必须立即执行它,如果脚本是外部脚本,则必须先下载脚本,因此会停止对HTML的解析,只有在JavaScript引擎从脚本执行代码后再次启动
+
+![](https://hacks.mozilla.org/files/2017/09/script-bold@2x-500x150.png)
+
+至于解析停止的原因是,脚本可以改变HTML及其产生的DOM对象模型,脚本可以通过添加节点来更改DOM结构`document.createElement()`。要更改HTML,脚本可以使用`document.write()`功能添加内容。他可以影响进一步解析的方式更改HTML,例如,该函数可以插入一个开始注释标记,使HTML的其余部分无效
+
+![](https://2r4s9p1yi1fa2jd7j43zph8r-wpengine.netdna-ssl.com/files/2017/09/image.gif)
+
+脚本还可以查询有关DOM的内容,如果在构建DOM时发生这种情况,则可能返回意外结果
+
+#### CSS阻塞问题
+
+JavaScript阻止解析,因为他可以去修改文档,CSS无法修改文档,因此似乎没有理由阻止解析,但是,如果脚本要求尚未解析的样式信息,该怎么办?浏览器不知道脚本执行什么,例如通过`dom`中的`style`属性访问CSS样式。
+
+![](https://hacks.mozilla.org/files/2017/09/assembling-2-500x302.png)
+
+因此CSS可能会阻止解析,具体取决于文档中外部样式表和脚本的顺序,如果在文档中的脚本之前放置了外部样式表,则DOM和CSSOM对象构造可能会相互干扰。在JavaScript完成执行之前。DOM构造无法继续,并且在CSS下载,解析并且CSSOM可用之前,JavaScript无法执行。
+
+![](https://hacks.mozilla.org/files/2017/09/blocking-bold@2x-1-500x162.png)
+
+#### defer 和 async
+
+如上所述,并非所有脚本对于用户体验都同样重要,例如跟踪和分析的脚本,我们可以异步加载这些不太重要的脚本
+
+通过`defer`和`async`这两个属性,可以告诉浏览器,它可以在后台加载脚本时继续解析HTML,然后再加载后执行脚本。这样,脚本下载不会阻止DOM构造和页面呈现。用户可以在所有脚本完成加载之前查看页面
+
+至于两者的区别是在他们开始执行脚本的那一刻,在此之前我们需要了解以下再浏览器加载HTML中一些事件
+
+![](https://user-gold-cdn.xitu.io/2018/4/16/162cd0af4a54bb2a?imageView2/0/w/1280/h/960/format/webp/ignore-error/1)
+
++ `domLoading`: 浏览器即将开始解析第一批收到的HTML文档字节
++ `domInteractive`: 表示浏览器完成对所有HTML的解析并且DOM构建完成的时间点
++ `domContentLoaded`: 表示DOM准备就绪并且没有样式表阻止JavaScript执行的时间点
++ `domComplete`: 所有处理完成,并且网页上的所有资源都已经下载完毕
++ `loadEvent`: 作为每个网页加载的最后一步,浏览器会触发`onload`事件,以便触发额外的应用逻辑
+
+`defer`都会在页面解析完毕之前,按照原本的顺序执行,但是在`domContentLoaded`事件发生之前执行
+
+![](https://hacks.mozilla.org/files/2017/09/defer-bold@2x-500x164.png)
+
+`async`则会在完成下载后就会立刻执行,同时会在`window.load`事件之前执行,因此就可能会出现脚本可能不会按他们再HTML中出现的顺序执行,这也意味着他们可以中断DOM构建
+
+无论在何处指定，async脚本都以低优先级加载。它们通常在所有其他脚本之后加载，而不会阻止DOM构建。但是，如果async脚本更快完成下载，则其执行可以阻止DOM构建以及之后完成下载的所有同步脚本。
+
+![](https://hacks.mozilla.org/files/2017/09/async-bold@2x-500x151.png)
+
+#### preload
+
+preload能够让浏览器提前加载执行资源(加载后并不执行),再需要的时候在执行
+
++ 将加载和执行分离开,可不阻塞渲染和domcument的`onload`事件
++ 提前加载执行资源,不在出现依赖的`font`字体隔了一段时间才刷出
+
+我们可以通过link 标签创建
+```
+<link rel="preload" href="/path/style.css" as="style">
+```
+
+
+
+
+
+
+
 
 
 
