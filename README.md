@@ -35,7 +35,11 @@
 
 #### 函数收集
 
-1. [自执行generator函数](./FunctionCollection/co.js)
+1. [自执行generator函数](./JavaScript/FunctionCollection/co.js)
+
+### 性能优化
+
+1. [概论](./performance/outline.md)
 
 ### 网络
 
