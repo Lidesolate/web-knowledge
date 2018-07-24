@@ -32,7 +32,7 @@
 #### 浏览器
 
 1. [渲染原理](./JavaScript/render.md)
-
+2. [安全](./JavaScript/safe.md)
 #### 函数收集
 
 1. [自执行generator函数](./JavaScript/FunctionCollection/co.js)
